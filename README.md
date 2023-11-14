@@ -7,4 +7,5 @@ Graph algorithms course at AGH UST
   <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab1">Lab 1 - Rozgrzewka</a></li>
   <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab2">Lab 2 - Maksymalny przepływ</a></li>
   <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab3">Lab 3 - Spójność krawędziowa</a></li>
+  <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab4">Lab 3 - Grafy przekątniowe i przedziałowe</a></li>
 </ul>
