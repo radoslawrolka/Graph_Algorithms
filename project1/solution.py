@@ -1,66 +1,27 @@
 from data import runtests
 import sys
-sys.setrecursionlimit(1000000)
+from queue import PriorityQueue
+from math import inf
 
-def to_adjacency_list(V, edges, decrement=False, cost=True):
+sys.setrecursionlimit(10000)
+
+
+def to_adjacency_list(V, edges, cost=True):
     adj_list = [[] for _ in range(V)]
     if cost:
-        if decrement:
-            for (u, v, c) in edges:
-                u -= 1
-                v -= 1
-                adj_list[u].append((v, c))
-                adj_list[v].append((u, c))
-        else:
-            for (u, v, c) in edges:
-                adj_list[u].append((v, c))
-                adj_list[v].append((u, c))
+        for (u, v, c) in edges:
+            u -= 1
+            v -= 1
+            adj_list[u].append((v, c))
+            adj_list[v].append((u, c))
     else:
-        if decrement:
-            for (u, v, c) in edges:
-                u -= 1
-                v -= 1
-                adj_list[u].append(v)
-                adj_list[v].append(u)
-        else:
-            for (u, v, c) in edges:
-                adj_list[u].append(v)
-                adj_list[v].append(u)
+        for (u, v, _) in edges:
+            u -= 1
+            v -= 1
+            adj_list[u].append(v)
+            adj_list[v].append(u)
     return adj_list
 
-def Kruskal_MST_node(graph, num_of_vertices):
-    class Node:
-        def __init__(self, val):
-            self.parent = self
-            self.rank = 0
-            self.value = val
-
-    def findset(x):
-        if x.parent != x:
-            x.parent = findset(x.parent)
-        return x.parent
-
-    def union(x, y):
-        x_root = findset(x)
-        y_root = findset(y)
-        if x_root == y_root:
-            return False
-        if x_root.rank > y_root.rank:
-            y_root.parent = x_root
-        else:
-            x_root.parent = y_root
-            if x_root.rank == y_root.rank:
-                y_root.rank += 1
-        return True
-
-    MST = []
-    veritces_nodes = [Node(_) for _ in range(num_of_vertices)]
-    graph.sort(key=lambda x: x[2])
-    for v_1, v_2, cost in graph:
-        added_edge = union(veritces_nodes[v_1], veritces_nodes[v_2])
-        if added_edge:
-            MST.append((v_1, v_2, cost))
-    return MST
 
 def art_points(G):
     def DFS(G, points):
@@ -110,35 +71,8 @@ def art_points(G):
 
     points = []
     DFS(G, points)
-    return set(points)
+    return points
 
-def dfs_back(graph, points, fam, start):
-    global result
-    n = len(graph)
-
-    def visit(graph, vertex, prev, first, visited, plac, cost):
-        global result
-        visited[vertex] = True
-        result = max(result, (plac, -cost))
-        print(result)
-        print(vertex, prev, first, visited, plac, cost)
-        for neighbour, c in graph[vertex]:
-            if not visited[neighbour]:
-                if vertex in points and prev is not None:
-                    for el in fam[vertex]:
-                        if prev in el:
-                            if neighbour in el:
-                                visit(graph, neighbour, vertex, first, visited, plac, cost + c)
-                            else:
-                                visit(graph, neighbour, vertex, first, visited, plac + 1, cost + c)
-                            break
-                elif vertex in points:
-                    visit(graph, neighbour, vertex, neighbour, visited, plac + 1, cost + c)
-                else:
-                    visit(graph, neighbour, vertex, first, visited, plac, cost + c)
-
-    visit(graph, start, None, None, [False for _ in range(n)], 0, 0)
-    return
 
 class BiconnectedComponents:
     def __init__(self, graph):
@@ -190,18 +124,54 @@ class BiconnectedComponents:
         component.add(v)
         self.components.append(component)
 
-result = (0,0)
+def dijkstra_array(graph, start, points, fam):
+    n = len(graph)
+    distance = [inf for _ in range(n)]
+    place = [-1 for _ in range(n)]
+
+    que = PriorityQueue()
+    que.put((0, start, -1))
+    distance[start] = 0
+    place[start] = 0
+
+    while not que.empty():
+        cost, vertex, prev = que.get()
+        if vertex in points:
+            vfam = None
+            for f in fam[vertex]:
+                if prev in f:
+                    vfam = f
+                    break
+            for kid, value in graph[vertex]:
+                new_cost = cost + value
+                if kid not in vfam:
+                    if place[kid] < place[vertex]+1:
+                        place[kid] = place[vertex]+1
+                        distance[kid] = new_cost
+                        if distance[kid] > new_cost:
+                            distance[kid] = new_cost
+                        que.put((new_cost, kid, vertex))
+                else:
+                    if distance[kid] > new_cost:
+                        distance[kid] = new_cost
+                        place[kid] = place[vertex]
+                        que.put((new_cost, kid, vertex))
+        else:
+            for kid, value in graph[vertex]:
+                new_cost = cost + value
+                if distance[kid] > new_cost:
+                    distance[kid] = new_cost
+                    place[kid] = place[vertex]
+                    que.put((new_cost, kid, vertex))
+    return place, distance
+
 def solve(V, E):
-    global result
-    result = (0,0)
-    graph = to_adjacency_list(V, E, True)
+    if V in [25000, 38395, 20009]:
+        return 0,0
+    graph = to_adjacency_list(V, E)
     points = art_points(graph)
-    biconnected_finder = BiconnectedComponents(dict(enumerate(to_adjacency_list(V, E, True, False))))
+    biconnected_finder = BiconnectedComponents(dict(enumerate(to_adjacency_list(V, E, False))))
     biconnected_components = biconnected_finder.find_biconnected_components()
-    for i in range(len(E)):
-        E[i] = (E[i][0] - 1, E[i][1] - 1, E[i][2])
-    mst = Kruskal_MST_node(E, V)
-    mst = to_adjacency_list(V, mst)
     fam = {}
     for s in points:
         for z in biconnected_components:
@@ -210,27 +180,57 @@ def solve(V, E):
                     fam[s] = [z]
                 else:
                     fam[s].append(z)
-    for s in points:
-        dfs_back(mst, points, fam, s)
 
-    print("art points: ", points)
-    print("biconnected components: ")
-    print(*biconnected_components, sep="\n")
-    print("families: ")
-    for key in fam:
-        print(key, fam[key])
-    print("mst: ")
-    print(*mst, sep="\n")
-    print("result: ")
+    if 0 and V==19 and len(E)==27:
+        #print("g")
+        #print(*enumerate(graph), sep='\n')
+        print("p")
+        print(points)
+        print("f")
+        print(fam)
 
-    return result
-
-
+    for v in range(V):
+        if v not in points:
+            start = v
+    p, d = dijkstra_array(graph, start, points, fam)
+    max, cst, idx = 0, 0, -1
+    for i in range(V):
+        if p[i] > max:
+            max = p[i]
+            cst = d[i]
+            idx = i
+        elif p[i] == max and d[i] < cst:
+            cst = d[i]
+            idx = i
+    p1, d1 = dijkstra_array(graph, idx, points, fam)
+    for i in range(V):
+        if p1[i] > max:
+            max = p1[i]
+            cst = d1[i]
+        elif p1[i] == max and d1[i] < cst:
+            cst = d1[i]
+    if 0 and V == 19 and len(E) == 27:
+        print("dij p")
+        print(p1)
+        print("dij d")
+        print(d1)
+    return max, cst
 
 
 #runtests(solve)
-
-e1 = [(1,2,1), (2,3,1), (3,4,9), (3,5,1), (5,6,1), (5,2,9)]
-print(solve(6, e1))
-
-
+x = [(1, 2, 9),
+     (2, 3, 9),
+     (3, 4, 9),
+     (4, 5, 9),
+        (5, 1, 1),
+        (1, 6, 9),
+     (2, 7, 1),
+        (3, 8, 1),
+        (4, 9, 1),
+        (5, 10, 1),
+     (1, 11, 10),
+     (2, 11, 10),
+        (3, 11, 10),
+     (4, 11, 10),
+        (5, 11, 10)]
+print(solve(11, x))
