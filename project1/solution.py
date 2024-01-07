@@ -2,26 +2,66 @@ from data import runtests
 import sys
 from queue import PriorityQueue
 from math import inf
-
+from queue import Queue
+from collections import defaultdict
 sys.setrecursionlimit(10000)
 
 
-def to_adjacency_list(V, edges, cost=True):
+def to_adjacency_list(V, edges):
     adj_list = [[] for _ in range(V)]
-    if cost:
-        for (u, v, c) in edges:
-            u -= 1
-            v -= 1
-            adj_list[u].append((v, c))
-            adj_list[v].append((u, c))
-    else:
-        for (u, v, _) in edges:
-            u -= 1
-            v -= 1
-            adj_list[u].append(v)
-            adj_list[v].append(u)
+    for (u, v, c) in edges:
+        u -= 1
+        v -= 1
+        adj_list[u].append((v, c))
+        adj_list[v].append((u, c))
     return adj_list
 
+
+def Dikstra_roll(graph, art, fam):
+    result = defaultdict(list)
+    visited = [False for _ in range(len(graph))]
+
+    que = PriorityQueue()
+    artq = Queue()
+    i = art.pop()
+    art.add(i)
+    artq.put((0, i))
+
+    while not artq.empty():
+        a, b = artq.get()
+        father = b
+        que.put((a, b))
+        while not que.empty():
+            cost, vertex = que.get()
+            visited[vertex] = True
+            for kid, value in graph[vertex]:
+                if visited[kid]: continue
+                if kid in art:
+                    artq.put((0, kid))
+                    result[kid].append((father, cost + value))
+                    result[father].append((kid, cost + value))
+                else:
+                    que.put((cost + value, kid))
+    for f in fam.values():
+        for s in f:
+            flag = 0
+            a = None
+            for v in s:
+                if v in art:
+                    flag += 1
+                    a = v
+                    if flag == 2:
+                        break
+            if flag == 1:
+                minic = inf
+                ver = None
+                for v, c in graph[a]:
+                    if v in s and c < minic:
+                        minic = c
+                        ver = v
+                result[a].append((ver, minic))
+                result[ver].append((a, minic))
+    return result
 
 def art_points(G):
     def DFS(G, points):
@@ -74,55 +114,57 @@ def art_points(G):
     return points
 
 
-class BiconnectedComponents:
-    def __init__(self, graph):
-        self.graph = graph
-        self.components = []
-        self.visited = set()
-        self.ids = {}
-        self.low = {}
-        self.current_id = 0
-        self.stack = []
+def find_biconnected_components(graph, points):
+    components = {}
+    for p in points:
+        components[p] = []
+    visited = set()
+    ids = {}
+    low = {}
+    current_id = 0
+    stack = []
 
-    def find_biconnected_components(self):
-        for node in self.graph:
-            if node not in self.visited:
-                self._dfs(node, None)
-        return self.components
+    def _dfs(node, parent):
+        nonlocal current_id
+        visited.add(node)
+        ids[node] = current_id
+        low[node] = current_id
+        current_id += 1
 
-    def _dfs(self, node, parent):
-        self.visited.add(node)
-        self.ids[node] = self.current_id
-        self.low[node] = self.current_id
-        self.current_id += 1
-
-        for neighbor in self.graph[node]:
+        for neighbor, _ in graph[node]:
             if neighbor == parent:
                 continue
 
-            if neighbor not in self.visited:
-                self.stack.append((node, neighbor))
-                self._dfs(neighbor, node)
-                self.low[node] = min(self.low[node], self.low[neighbor])
+            if neighbor not in visited:
+                stack.append((node, neighbor))
+                _dfs(neighbor, node)
+                low[node] = min(low[node], low[neighbor])
 
-                if self.low[neighbor] >= self.ids[node]:
-                    self._process_component(node, neighbor)
+                if low[neighbor] >= ids[node]:
+                    _process_component(node, neighbor)
 
             else:
-                self.low[node] = min(self.low[node], self.ids[neighbor])
-                if self.ids[neighbor] < self.ids[node]:
-                    self.stack.append((node, neighbor))
+                low[node] = min(low[node], ids[neighbor])
+                if ids[neighbor] < ids[node]:
+                    stack.append((node, neighbor))
 
-    def _process_component(self, node, neighbor):
+    def _process_component(node, neighbor):
         component = set()
-        while self.stack[-1] != (node, neighbor):
-            u, v = self.stack.pop()
+        while stack[-1] != (node, neighbor):
+            u, v = stack.pop()
             component.add(u)
             component.add(v)
-        u, v = self.stack.pop()
+        u, v = stack.pop()
         component.add(u)
         component.add(v)
-        self.components.append(component)
+        for p in points:
+            if p in component:
+                components[p].append(component)
+
+    for node in range(len(graph)):
+        if node not in visited:
+            _dfs(node, None)
+    return components
 
 def dijkstra_array(graph, start, points, fam):
     n = len(graph)
@@ -170,24 +212,7 @@ def solve(V, E):
         return 0,0
     graph = to_adjacency_list(V, E)
     points = art_points(graph)
-    biconnected_finder = BiconnectedComponents(dict(enumerate(to_adjacency_list(V, E, False))))
-    biconnected_components = biconnected_finder.find_biconnected_components()
-    fam = {}
-    for s in points:
-        for z in biconnected_components:
-            if s in z:
-                if s not in fam:
-                    fam[s] = [z]
-                else:
-                    fam[s].append(z)
-
-    if 0 and V==19 and len(E)==27:
-        #print("g")
-        #print(*enumerate(graph), sep='\n')
-        print("p")
-        print(points)
-        print("f")
-        print(fam)
+    fam = find_biconnected_components(graph, points)
 
     for v in range(V):
         if v not in points:
@@ -209,28 +234,10 @@ def solve(V, E):
             cst = d1[i]
         elif p1[i] == max and d1[i] < cst:
             cst = d1[i]
-    if 0 and V == 19 and len(E) == 27:
-        print("dij p")
-        print(p1)
-        print("dij d")
-        print(d1)
     return max, cst
 
 
-#runtests(solve)
-x = [(1, 2, 9),
-     (2, 3, 9),
-     (3, 4, 9),
-     (4, 5, 9),
-        (5, 1, 1),
-        (1, 6, 9),
-     (2, 7, 1),
-        (3, 8, 1),
-        (4, 9, 1),
-        (5, 10, 1),
-     (1, 11, 10),
-     (2, 11, 10),
-        (3, 11, 10),
-     (4, 11, 10),
-        (5, 11, 10)]
-print(solve(11, x))
+runtests(solve)
+
+
+
