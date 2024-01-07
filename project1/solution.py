@@ -4,7 +4,10 @@ from queue import PriorityQueue
 from math import inf
 from queue import Queue
 from collections import defaultdict
-sys.setrecursionlimit(10000)
+
+sys.setrecursionlimit(1000000)
+import resource as rc
+rc.setrlimit(rc.RLIMIT_STACK, (rc.RLIM_INFINITY, rc.RLIM_INFINITY))
 
 
 def to_adjacency_list(V, edges):
@@ -166,10 +169,11 @@ def find_biconnected_components(graph, points):
             _dfs(node, None)
     return components
 
-def dijkstra_array(graph, start, points, fam):
+def dijkstra_array(graph, start, points, fam, breaker):
     n = len(graph)
     distance = [inf for _ in range(n)]
     place = [-1 for _ in range(n)]
+    visited = [False for _ in range(n)]
 
     que = PriorityQueue()
     que.put((0, start, -1))
@@ -178,6 +182,8 @@ def dijkstra_array(graph, start, points, fam):
 
     while not que.empty():
         cost, vertex, prev = que.get()
+        visited[vertex] = True
+        if cost > breaker: break
         if vertex in points:
             vfam = None
             for f in fam[vertex]:
@@ -185,11 +191,11 @@ def dijkstra_array(graph, start, points, fam):
                     vfam = f
                     break
             for kid, value in graph[vertex]:
+                if visited[kid]: continue
                 new_cost = cost + value
                 if kid not in vfam:
-                    if place[kid] < place[vertex]+1:
+                    if True:
                         place[kid] = place[vertex]+1
-                        distance[kid] = new_cost
                         if distance[kid] > new_cost:
                             distance[kid] = new_cost
                         que.put((new_cost, kid, vertex))
@@ -200,6 +206,7 @@ def dijkstra_array(graph, start, points, fam):
                         que.put((new_cost, kid, vertex))
         else:
             for kid, value in graph[vertex]:
+                if visited[kid]: continue
                 new_cost = cost + value
                 if distance[kid] > new_cost:
                     distance[kid] = new_cost
@@ -208,8 +215,6 @@ def dijkstra_array(graph, start, points, fam):
     return place, distance
 
 def solve(V, E):
-    if V in [25000, 38395, 20009]:
-        return 0,0
     graph = to_adjacency_list(V, E)
     points = art_points(graph)
     fam = find_biconnected_components(graph, points)
@@ -217,27 +222,26 @@ def solve(V, E):
     for v in range(V):
         if v not in points:
             start = v
-    p, d = dijkstra_array(graph, start, points, fam)
-    max, cst, idx = 0, 0, -1
+    p, d = dijkstra_array(graph, start, points, fam, inf)
+    newstart = []
+    max = 0
     for i in range(V):
         if p[i] > max:
             max = p[i]
-            cst = d[i]
-            idx = i
-        elif p[i] == max and d[i] < cst:
-            cst = d[i]
-            idx = i
-    p1, d1 = dijkstra_array(graph, idx, points, fam)
-    for i in range(V):
-        if p1[i] > max:
-            max = p1[i]
-            cst = d1[i]
-        elif p1[i] == max and d1[i] < cst:
-            cst = d1[i]
+            newstart = [i]
+        elif p[i] == max:
+            newstart.append(i)
+    max, cst = 0, inf
+    for idx in newstart:
+        p1, d1 = dijkstra_array(graph, idx, points, fam, cst)
+        for i in range(V):
+            if p1[i] > max:
+                max = p1[i]
+                cst = d1[i]
+            elif p1[i] == max and d1[i] < cst:
+                cst = d1[i]
+
     return max, cst
 
 
 runtests(solve)
-
-
-
