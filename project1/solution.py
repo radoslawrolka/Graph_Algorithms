@@ -67,53 +67,48 @@ def Dikstra_roll(graph, art, fam):
     return result
 
 def art_points(G):
-    def DFS(G, points):
-        V = len(G)
-        parent = [None for _ in range(V)]
-        visited = [False for _ in range(V)]
-        d = [None for _ in range(V)]
-        low = [None for _ in range(V)]
-        time = 0
+    V = len(G)
+    parent = [None for _ in range(V)]
+    visited = [False for _ in range(V)]
+    d = [None for _ in range(V)]
+    low = [None for _ in range(V)]
+    time = 0
+    points = set()
 
-        def DFSVisit(G, u):
-            nonlocal time
-            time += 1
-            d[u] = time
-            low[u] = time
-            visited[u] = True
+    def DFSVisit(G, u):
+        nonlocal time
+        time += 1
+        d[u] = time
+        low[u] = time
+        visited[u] = True
+        for v, _ in G[u]:
+            if not visited[v]:
+                parent[v] = u
+                DFSVisit(G, v)
 
-            for v, _ in G[u]:
-                if not visited[v]:
-                    parent[v] = u
-                    DFSVisit(G, v)
+        for v, _ in G[u]:
+            if parent[u] != v:
+                if low[v] < low[u]:
+                    low[u] = low[v]
+            if parent[v] == u:
+                if low[v] < low[u]:
+                    low[u] = low[v]
 
-            for v, _ in G[u]:
-                if parent[u] != v:
-                    if low[v] < low[u]:
-                        low[u] = low[v]
-                if parent[v] == u:
-                    if low[v] < low[u]:
-                        low[u] = low[v]
+    for u in range(V):
+        if not visited[u]:
+            DFSVisit(G, u)
 
-        for u in range(V):
-            if not visited[u]:
-                DFSVisit(G, u)
-
-        childs = 0
-
-        for v, _ in G[0]:
-            if parent[v] == 0:
-                childs += 1
-        if childs >= 2:
-            points.append(0)
-        for u in range(1, V):
-            for v, _ in G[u]:
-                if parent[v] == u and low[v] >= d[u]:
-                    points.append(u)
-                    break
-
-    points = []
-    DFS(G, points)
+    childs = 0
+    for v, _ in G[0]:
+        if parent[v] == 0:
+            childs += 1
+    if childs >= 2:
+        points.add(0)
+    for u in range(1, V):
+        for v, _ in G[u]:
+            if parent[v] == u and low[v] >= d[u]:
+                points.add(u)
+                break
     return points
 
 
@@ -224,14 +219,15 @@ def solve(V, E):
             start = v
     p, d = dijkstra_array(graph, start, points, fam, inf)
     newstart = []
-    max = 0
+    max, cst = 0, inf
     for i in range(V):
         if p[i] > max:
             max = p[i]
             newstart = [i]
+            cst = d[i]
         elif p[i] == max:
             newstart.append(i)
-    max, cst = 0, inf
+            cst = min(cst, d[i])
     for idx in newstart:
         p1, d1 = dijkstra_array(graph, idx, points, fam, cst)
         for i in range(V):
