@@ -18,7 +18,7 @@ Graph algorithms course at AGH UST
   <ul>
     <li>Algorytm Stoer'a-Wagnera (MinCut)</li>
   </ul>
-  <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab4">Lab 3 - Grafy przekątniowe i przedziałowe</a></li>
+  <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab4">Lab 4 - Grafy przekątniowe i przedziałowe</a></li>
   <ul>
     <li>Leksykograficzny BFS (LexBFS)</li>
     <li>Algorytm klasyfikujący grafy przekątniowe</li>
@@ -26,7 +26,17 @@ Graph algorithms course at AGH UST
     <li>Algorytm kolorujący wierzchołki grafu (Liczba chromatyczna)</li>
     <li>Algorytm znajdujący pokrycie wierzchołkowe grafu</li>
   </ul>
+  <li><a href="https://github.com/radoslawrolka/Graph_Algorithms/tree/main/lab5">Lab 5 - Grafy przekątniowe i przedziałowe</a></li>
+  <ul>
+    <li>NetworkX</li>
+    <li>Planarność</li>
+    <li>Przepływy</li>
+    <li>SAT-2CNF</li>
+  </ul>
 </ul>
 
-## Projekt
+## Projekt 1
+...
+
+## Projekt 2
 ...
