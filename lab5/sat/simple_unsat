@@ -1,4 +1,4 @@
-c solution = 0
+c solution=0
 p cnf 2 4
 1 2 0
 -1 2 0
