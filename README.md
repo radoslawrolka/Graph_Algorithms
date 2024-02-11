@@ -34,9 +34,3 @@ Graph algorithms course at AGH UST
     <li>SAT-2CNF</li>
   </ul>
 </ul>
-
-## Projekt 1
-...
-
-## Projekt 2
-...
